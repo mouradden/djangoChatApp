@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Chat</title>
+</head>
+<body>
+    <div id="user-list">
+        <!-- User list will be populated here -->
+    </div>
+    <div id="chat">
+        <textarea id="chat-log" readonly></textarea>
+        <input id="chat-message-input" type="text">
+        <button id="chat-message-submit">Send</button>
+    </div>
+    <script>
+        const userId = 1; // Example user ID, replace with the actual logged-in user ID
+
+        function fetchUsers() {
+            fetch('/users/')
+                .then(response => response.json())
+                .then(users => {
+                    const userList = document.getElementById('user-list');
+                    users.forEach(user => {
+                        if (user.id !== userId) {  // Exclude the current user
+                            const userElement = document.createElement('div');
+                            userElement.textContent = user.username;
+                            userElement.dataset.userId = user.id;
+                            userElement.addEventListener('click', () => startChat(user.id));
+                            userList.appendChild(userElement);
+                        }
+                    });
+                });
+        }
+
+        function startChat(otherUserId) {
+            const chatSocket = new WebSocket(
+                'ws://' + window.location.host + '/ws/chat/' + userId + '/' + otherUserId + '/'
+            );
+
+            chatSocket.onmessage = function(e) {
+                const data = JSON.parse(e.data);
+                document.getElementById('chat-log').value += (data.username + ': ' + data.message + '\n');
+            };
+
+            chatSocket.onclose = function(e) {
+                console.error('Chat socket closed unexpectedly');
+            };
+
+            document.getElementById('chat-message-submit').onclick = function(e) {
+                const messageInputDom = document.getElementById('chat-message-input');
+                const message = messageInputDom.value;
+                chatSocket.send(JSON.stringify({
+                    'message': message,
+                    'username': 'User'  // Replace with actual username
+                }));
+                messageInputDom.value = '';
+            };
+        }
+
+        fetchUsers();
+    </script>
+</body>
+</html>
+
+
+<!-- 
+<!DOCTYPE html>
+<html>
+  <body>
+    <center><h1>Hello , Welcome to my chat site ! {{request.user}}</h1></center>
+    <br>
+    {% if request.user.is_authenticated  %}
+    <center> Logout the chat Page <a href = "{% url 'logout-user' %}">Logout</a></center>
+    {% endif %}
+    <div
+      class="chat__item__container"
+      id="id_chat_item_container"
+      style="font-size: 20px"
+    >
+      <br />
+      <input type="text" id="id_message_send_input" />
+      <button type="submit" id="id_message_send_button">Send Message</button>
+      <br />
+      <br />
+    </div>
+    <script>
+      const chatSocket = new WebSocket("ws://" + window.location.host + "/");
+      chatSocket.onopen = function (e) {
+        console.log("The connection was setup successfully !");
+      };
+      chatSocket.onclose = function (e) {
+        console.log("Something unexpected happened !");
+      };
+      document.querySelector("#id_message_send_input").focus();
+      document.querySelector("#id_message_send_input").onkeyup = function (e) {
+        if (e.keyCode == 13) {
+          document.querySelector("#id_message_send_button").click();
+        }
+      };
+      document.querySelector("#id_message_send_button").onclick = function (e) {
+        var messageInput = document.querySelector(
+          "#id_message_send_input"
+        ).value;
+        chatSocket.send(JSON.stringify({ message: messageInput, username : "{{request.user.username}}"}));
+      };
+      chatSocket.onmessage = function (e) {
+        const data = JSON.parse(e.data);
+        var div = document.createElement("div");
+        div.innerHTML = data.username + " : " + data.message;
+        document.querySelector("#id_message_send_input").value = "";
+        document.querySelector("#id_chat_item_container").appendChild(div);
+      };
+    </script>
+  </body>
+</html> -->
