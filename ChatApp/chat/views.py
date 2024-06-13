@@ -13,7 +13,11 @@ def index(request):
             receiver_ = User.objects.get(username=receiver_name)
             data = Chat.objects.get(sender=request.user,receiver=receiver_).content
     receivers = User.objects.exclude(pk=request.user.id)
-    return render(request,'index.html',{'my':data,'content': data,'receivers':receivers})
+    
+    return render(request,'index.html', {
+        'content': data,
+        'receivers':receivers
+        })
 
 def login_view(request):
     if request.user.is_authenticated:
@@ -32,3 +36,8 @@ def login_view(request):
         form = AuthenticationForm()
     
     return render(request, 'login.html', {'form': form})
+
+from django.views.generic import TemplateView
+
+class StaticView(TemplateView):
+    template_name = 'index.html'
